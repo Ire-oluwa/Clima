@@ -1,4 +1,7 @@
+import 'package:clima/screens/location_screen.dart';
+import 'package:clima/services/weather.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:geolocator/geolocator.dart';
 
 class LoadingScreen extends StatefulWidget {
@@ -9,41 +12,44 @@ class LoadingScreen extends StatefulWidget {
 }
 
 class _LoadingScreenState extends State<LoadingScreen> {
-  Future<Position> _determinePosition() async {
-    bool serviceEnabled;
-    LocationPermission permission;
+  @override
+  void initState() {
+    super.initState();
+    getLocationData();
+  }
 
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      return Future.error('Location services are disabled.');
-    }
+  void getLocationData() async {
+    var weatherData = WeatherModel().getLocationWeather();
+    //I should probably remove what wraps the navigator
+    //WidgetsBinding.instance?.addPostFrameCallback((context) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (BuildContext context) {
+            return LocationScreen(
+              locationWeather: weatherData,
+            );
+          },
+        ),
+      );
+    //});
+  }
 
-    permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
-        return Future.error('Location permissions are denied');
-      }
-    }
+  void checkForPermission() async {
+    LocationPermission permission = await Geolocator.checkPermission();
+  }
 
-    if (permission == LocationPermission.deniedForever) {
-      return Future.error(
-          'Location permissions are permanently denied, we cannot request permissions.');
-    }
-    return await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.low);
+  void requestForPermission() async {
+    LocationPermission permission = await Geolocator.requestPermission();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return const Scaffold(
       body: Center(
-        child: ElevatedButton(
-          onPressed: () {
-            //Get the current location
-            _determinePosition();
-          },
-          child: const Text('Get Location'),
+        child: SpinKitRotatingCircle(
+          color: Colors.white,
+          size: 100.0,
         ),
       ),
     );
